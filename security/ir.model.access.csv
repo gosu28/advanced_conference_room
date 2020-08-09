@@ -1,0 +1,12 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_conference_room_user,access_conference_room_user,model_conference_room,base.group_user,1,0,0,0
+access_conference_location_room_admin,access_conference_location_room_admin,model_conference_room,conference_location_room_admin,1,1,1,1
+access_find_busy_employee,find.busy.employee,model_find_busy_employee,base.group_user,1,1,1,1
+access_booked_calendar_event,booked.calendar.event,model_booked_calendar_event,base.group_user,1,0,0,0
+access_update_booked_calendar_event,update.booked.calendar.event,model_update_booked_calendar_event,base.group_user,1,1,1,1
+access_conference_template,conference.template,model_conference_template,base.group_user,1,1,1,1
+access_conference_template_line,conference.template.line,model_conference_template_line,base.group_user,1,1,1,1
+access_employees_busy_today,employees.busy.today,model_employees_busy_today,base.group_user,1,0,0,0
+access_update_location_event,update.location.event,model_update_location_event,base.group_user,1,1,1,1
+access_advanced_related_employee,access_advanced_related_employee,model_advanced_related_employee,base.group_system,1,1,1,1
+

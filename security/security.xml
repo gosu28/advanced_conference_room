@@ -1,0 +1,18 @@
+<odoo>
+    <data>
+        <record id="conference_location_room_admin" model="res.groups">
+            <field name="name"># Advanced Conference Room - Admin</field>
+            <field name="category_id" ref=""/>
+        </record>
+        <record id="conference_location_room_admin_rule" model="ir.rule">
+            <field name="name"># Advanced Conference Room - Full access for admin</field>
+            <field ref="model_conference_room" name="model_id"/>
+            <field name="domain_force">[(1,'=',1)]</field>
+            <field name="groups" eval="[(4, ref('conference_location_room_admin'))]"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_unlink" eval="1"/>
+            <field name="perm_read" eval="1"/>
+        </record>
+    </data>
+</odoo>

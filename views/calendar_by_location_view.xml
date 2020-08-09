@@ -1,0 +1,28 @@
+<odoo>
+    <data>
+        <record id="view_calendar_event_calendar_by_location" model="ir.ui.view">
+            <field name="name">calendar.event.calendar</field>
+            <field name="model">calendar.event</field>
+            <field name="priority" eval="2"/>
+            <field name="arch" type="xml">
+                <calendar quick_add="False" string="Meetings" date_start="start" date_stop="stop"
+                          color="location_rooms">
+                    <field name="name"/>
+                </calendar>
+            </field>
+        </record>
+
+        <record model="ir.actions.act_window" id="action_calendar_by_location">
+            <field name="name">Conference by Location</field>
+            <field name="res_model">calendar.event</field>
+            <field name="view_mode">calendar,tree,form</field>
+            <field name="view_id" ref="view_calendar_event_calendar_by_location"/>
+        </record>
+
+        <menuitem id="meeting_by_location"
+                  name="Leaves | Events by Location"
+                  action="action_calendar_by_location"
+                  parent="calendar.mail_menu_calendar"
+                  sequence="90"/>
+    </data>
+</odoo>

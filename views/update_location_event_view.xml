@@ -1,0 +1,36 @@
+<odoo>
+    <data>
+        <record model="ir.ui.view" id="update_booked_location_form">
+            <field name="name">Update Location Event</field>
+            <field name="model">update.location.event</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form string="form">
+                    <sheet>
+                        <header>
+                            <button string="Update" type="object" name="compute_update_event"
+                                    class="oe_highlight"/>
+                        </header>
+
+                        <group>
+                            <field name="response" widget="html"></field>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record model="ir.actions.act_window" id="action_update_location_event">
+            <field name="name">Update Location Event</field>
+            <field name="res_model">update.location.event</field>
+            <field name="view_mode">form</field>
+            <field name="target">inline</field>
+        </record>
+
+        <menuitem id="update_location_event"
+                  name="Update Location Event"
+                  action="action_update_location_event"
+                  parent="calendar.menu_calendar_configuration"
+                  sequence="2"/>
+    </data>
+</odoo>

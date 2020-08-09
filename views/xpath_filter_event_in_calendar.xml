@@ -1,0 +1,18 @@
+<odoo>
+    <data>
+        <record id="view_calendar_event_inherit_search" model="ir.ui.view">
+            <field name="name">calendar.event.search.expand.filter</field>
+            <field name="model">calendar.event</field>
+            <field name="inherit_id" ref="calendar.view_calendar_event_search"/>
+            <field name="arch" type="xml">
+                <xpath expr="/search">
+                    <separator/>
+                    <filter string="Events" help="Events" name="events" domain="[('is_leave', '!=', True)]"/>
+                    <separator/>
+                    <filter string="Leaves" help="Leaves" name="leaves" domain="[('is_leave', '=', True)]"/>
+                    <separator/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

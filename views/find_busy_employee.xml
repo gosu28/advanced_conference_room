@@ -1,0 +1,51 @@
+<odoo>
+    <data>
+        <record model="ir.actions.act_window" id="action_find_busy_employee">
+            <field name="name">Conference search</field>
+            <field name="res_model">find.busy.employee</field>
+            <field name="view_mode">form</field>
+            <field name="target">inline</field>
+        </record>
+
+        <record model="ir.ui.view" id="find_busy_employee_form">
+            <field name="name">Find busy employee form</field>
+            <field name="model">find.busy.employee</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form string="form" create="false" edit="false">
+                    <sheet>
+                        <group>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                        <separator/>
+                        <group string="Employee busy">
+                            <field name="employees" readonly="True">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="department_id"/>
+                                </tree>
+                            </field>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="find_busy_employee_tree" model="ir.ui.view">
+            <field name="name">abc</field>
+            <field name="model">find.busy.employee</field>
+            <field name="arch" type="xml">
+                <tree string="">
+                    <field name="date_from"/>
+                    <field name="date_to"/>
+                </tree>
+            </field>
+        </record>
+
+        <!--        <menuitem id="find_busy_employee"-->
+        <!--                  name="Find Busy Employees"-->
+        <!--                  action="action_find_busy_employee"-->
+        <!--                  parent="advanced_conference_room.employees_busy"/>-->
+    </data>
+</odoo>

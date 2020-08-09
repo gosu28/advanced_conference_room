@@ -1,0 +1,5 @@
+<odoo>
+    <!--    <data>-->
+    <!--        <menuitem id="employees_busy" name="Employees Busy" parent="calendar.mail_menu_calendar" sequence="80"/>-->
+    <!--    </data>-->
+</odoo>

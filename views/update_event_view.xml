@@ -1,0 +1,58 @@
+<odoo>
+    <data>
+        <record model="ir.ui.view" id="update_booked_calendar_event_form">
+            <field name="name">Update Booked Calendar Event</field>
+            <field name="model">update.booked.calendar.event</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form string="form">
+                    <sheet>
+                        <header>
+                            <button string="Update" type="object" name="compute_update_booked_calendar_event"
+                                    class="oe_highlight"/>
+                        </header>
+                        <group>
+                            <field name="response" widget="html"></field>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record model="ir.actions.act_window" id="action_update_booked_calendar_event">
+            <field name="name">Update Booked Calendar Event</field>
+            <field name="res_model">update.booked.calendar.event</field>
+            <field name="view_mode">form</field>
+            <field name="target">inline</field>
+        </record>
+        <!--Disable field allday , hide archive button-->
+        <template id="assets_backend" name="Calendar Asset" inherit_id="web.assets_backend">
+            <xpath expr="." position="inside">
+                <script src="/advanced_conference_room/static/js/calendar_optional_config.js"></script>
+<!--                <script src="/advanced_conference_room/static/js/disable_archive_unarchive_tree_view.js"></script>-->
+            </xpath>
+        </template>
+<!--        <record model="ir.ui.view" id="calendar_event_disable_allday">-->
+<!--            <field name="name">calendar.disable.allday</field>-->
+<!--            <field name="model">calendar.event</field>-->
+<!--            <field name="inherit_id" ref="calendar.view_calendar_event_form"/>-->
+<!--            <field name="arch" type="xml">-->
+<!--                <xpath expr="//field[@name='allday']" position="replace">-->
+<!--                    <field name="allday" invisible="1"/>-->
+<!--                </xpath>-->
+<!--                <xpath expr="//field[@name='recurrency']" position="replace">-->
+<!--                    <field name="recurrency" invisible="1"/>-->
+<!--                </xpath>-->
+<!--                <xpath expr="//field[@name='partner_ids']" position="attributes">-->
+<!--                    <attribute name="attrs">{'required': 1}</attribute>-->
+<!--                </xpath>-->
+<!--            </field>-->
+<!--        </record>-->
+
+        <menuitem id="update_booked_calendar_event"
+                  name="Update Calendar Event"
+                  action="action_update_booked_calendar_event"
+                  parent="calendar.menu_calendar_configuration"
+                  sequence="1"/>
+    </data>
+</odoo>

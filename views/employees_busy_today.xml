@@ -1,0 +1,34 @@
+<odoo>
+    <data>
+        <record model="ir.actions.act_window" id="action_employees_busy_today">
+            <field name="name">Employees Busy Today</field>
+            <field name="res_model">employees.busy.today</field>
+            <field name="view_mode">form</field>
+            <field name="target">inline</field>
+        </record>
+
+        <record id="employees_busy_today_view" model="ir.ui.view">
+            <field name="name">View Form</field>
+            <field name="model">employees.busy.today</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group string="Employees Busy Today">
+                            <field name="employees">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="department_id"/>
+                                </tree>
+                            </field>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!--        <menuitem id="employees_busy_today"-->
+        <!--                  name="Employees Busy Today"-->
+        <!--                  action="action_employees_busy_today"-->
+        <!--                  parent="advanced_conference_room.employees_busy"/>-->
+    </data>
+</odoo>

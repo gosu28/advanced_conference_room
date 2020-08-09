@@ -1,0 +1,50 @@
+<odoo>
+    <data>
+        <record model="ir.actions.act_window" id="action_conference_template">
+            <field name="name">Description Template</field>
+            <field name="res_model">conference.template</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">inline</field>
+        </record>
+
+        <record id="conference_template_form" model="ir.ui.view">
+            <field name="name">Description Template</field>
+            <field name="model">conference.template</field>
+            <field name="arch" type="xml">
+                <form string="Description Template">
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                        </group>
+                        <group>
+                            <field name="conference_template_line_id">
+                                <tree editable="bottom">
+                                    <field name="host" widget="text"/>
+                                    <field name="task" widget="text"/>
+                                    <field name="deadline" widget="text"/>
+                                    <field name="plan" widget="text"/>
+                                </tree>
+                            </field>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="conference_template_tree" model="ir.ui.view">
+            <field name="name">Description Template</field>
+            <field name="model">conference.template</field>
+            <field name="arch" type="xml">
+                <tree string="">
+                    <field name="name"/>
+                </tree>
+            </field>
+        </record>
+
+        <menuitem id="conference_template"
+                  name="Description Template"
+                  action="action_conference_template"
+                  parent="calendar.mail_menu_calendar"
+                  sequence="100"/>
+    </data>
+</odoo>

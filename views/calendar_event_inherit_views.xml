@@ -1,0 +1,139 @@
+<odoo>
+    <data>
+        <record id="calendar_inherit_view" model="ir.ui.view">
+            <field name="name">calendar.event</field>
+            <field name="model">calendar.event</field>
+            <field name="inherit_id" ref="calendar.view_calendar_event_calendar"/>
+            <field name="arch" type="xml">
+                <xpath expr="/calendar" position="attributes">
+                    <attributes name="attrs">{'quick_add': False}</attributes>
+                </xpath>
+            </field>
+        </record>
+        <record id="calendar_event_tree_inherit_view_location" model="ir.ui.view">
+            <field name="name">calendar.event</field>
+            <field name="model">calendar.event</field>
+            <field name="inherit_id" ref="calendar.view_calendar_event_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='location']" position="replace">
+                    <field name="location_rooms" widget="many2many_tags"
+                           string="Locations"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!--Delete send SMS to attendees action-->
+        <record id="enable_send_sms_to_attendees" model="res.groups">
+            <field name="name"># Enable-Send-SMS</field>
+        </record>
+        <!--        <record model="ir.actions.act_window" id="calendar_sms.sms_message_send_action_mutli">-->
+        <!--            <field name="groups_id" eval="[(4,ref('advanced_conference_room.enable_send_sms_to_attendees'))]"/>-->
+        <!--        </record>-->
+        <record model="ir.ui.view" id="calendar_inherit_view_form">
+            <field name="name">Calendar Inherit View Form</field>
+            <field name="model">calendar.event</field>
+            <field name="type">form</field>
+            <field name="inherit_id" ref="calendar.view_calendar_event_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='duration']" position="attributes">
+                    <attribute name="attrs">{'required': True }</attribute>
+                </xpath>
+                <xpath expr="//page[@name='page_options']" position="attributes">
+                    <attribute name="groups">base.group_no_one</attribute>
+                </xpath>
+                <xpath expr="//field[@name='name']" position="after">
+                    <field name="res_model_id" invisible="1"/>
+                </xpath>
+                <xpath expr="//div[hasclass('oe_title')]" position="after">
+                    <div class="oe_button_box" name="button_box">
+                        <button string="Decline" type="object" name="compute_decline_attendee"
+                                class="oe_stat_button float-right" icon="fa-ban text-danger"
+                                attrs="{'invisible': [('state', '=', 'accepted')]}"/>
+                        <button string="Join Now" type="object" name="compute_join_attendee"
+                                class="oe_stat_button float-right" icon="fa-check text-success"
+                                attrs="{'invisible': [('state', '=', 'declined')]}"/>
+                    </div>
+                </xpath>
+                <xpath expr="//field[@name='description']" position="replace">
+                    <field name="tasks" required="1">
+                        <tree required="1">
+                            <field name="host" required="1"/>
+                            <field name="task" required="1"/>
+                            <field name="deadline" widget="text"/>
+                            <field name="plan" widget="text"/>
+                        </tree>
+                        <form>
+                            <sheet>
+                                <group>
+                                    <field name="host" widget="text" required="1"/>
+                                    <field name="task" widget="text" required="1"/>
+                                    <field name="deadline" widget="text"/>
+                                    <field name="plan" widget="text"/>
+                                </group>
+                            </sheet>
+                        </form>
+                    </field>
+                </xpath>
+                <xpath expr="//field[@name='location']" position="replace">
+                    <field name="location_rooms" required="1" widget="many2many_tags"/>
+                </xpath>
+                <xpath expr="//field[@name='location_rooms']" position="after">
+                    <field name="conference_template"/>
+                    <field name="create_by_duplicate" invisible="1"/>
+                </xpath>
+                <xpath expr="//button[@name='action_open_calendar_event']" position="replace">
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button float-right" icon="fa-bars" type="object"
+                                name="action_open_calendar_event"
+                                attrs="{'invisible': ['|', ('res_model', '=', False), ('res_id', '=', False)]}">
+                            <field name="res_model_string" widget="statinfo"/>
+                        </button>
+                    </div>
+                </xpath>
+                <xpath expr="//div[@class='oe_chatter']" position="replace">
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids" widget="mail_followers"/>
+                        <field name="activity_ids" widget="mail_activity"/>
+                        <field name="message_ids" widget="mail_thread"/>
+                    </div>
+                </xpath>
+                <xpath expr="//field[@name='partner_ids']" position="attributes">
+                    <attribute name="domain">[('user_ids','!=',False)]</attribute>
+                </xpath>
+            </field>
+        </record>
+        <record model="ir.ui.view" id="calendar_inherit_view_calendar_core">
+            <field name="name">Calendar Inherit Calendar Core</field>
+            <field name="model">calendar.event</field>
+            <field name="inherit_id" ref="calendar.view_calendar_event_calendar"/>
+            <field name="arch" type="xml">
+                <xpath expr="//calendar" position="replace">
+                    <!--                    <calendar string="Meetings" date_start="start" date_stop="stop" date_delay="duration"-->
+                    <!--                              all_day="allday"-->
+                    <!--                              readonly_form_view_id="%(calendar.view_calendar_event_form)s"-->
+                    <!--                              event_open_popup="false" event_limit="3"-->
+                    <!--                              color="partner_id"-->
+                    <!--                              quick_add="False">-->
+                    <!--                        <field name="name"/>-->
+                    <!--                        <field name="partner_ids" write_model="calendar.contacts" write_field="partner_id"-->
+                    <!--                               avatar_field="image_small"/>-->
+                    <!--                        <field name="is_highlighted" invisible="1"/>-->
+                    <!--                    </calendar>-->
+                    <calendar js_class="attendee_calendar" string="Meetings" date_start="start" date_stop="stop"
+                              date_delay="duration" all_day="allday"
+                              event_open_popup="false"
+                              event_limit="5"
+                              color="partner_id"
+                              quick_add="False">
+                        <field name="attendee_status"/>
+                        <field name="partner_id"/>
+                        <field name="partner_ids" widget="many2many_tags_avatar" write_model="calendar.contacts"
+                               write_field="partner_id" avatar_field="image_128"/>
+                        <field name="is_highlighted" invisible="1"/>
+                        <field name="description"/>
+                    </calendar>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

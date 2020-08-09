@@ -1,0 +1,51 @@
+<odoo>
+    <data>
+        <record model="ir.ui.view" id="booked_calendar_event_form">
+            <field name="name">Booked calendar event form</field>
+            <field name="model">booked.calendar.event</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form string="form" create="false">
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                            <field name="booked_calendar_event_id" groups="base.group_system"></field>
+                            <!--<field name="location_room" attrs="{'invisible':[1,'=',1]}"/>-->
+                            <!--<field name="location_rooms" required="0" widget="many2many_tags"/>-->
+                            <field name="location_room" attrs="{'invisible':[1,'=',1]}"/>
+                        </group>
+                        <group>
+                            <field name="start"/>
+                            <field name="stop"/>
+                        </group>
+
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <record id="view_booked_calendar_event_calendar" model="ir.ui.view">
+            <field name="name">Booked calendar event</field>
+            <field name="model">booked.calendar.event</field>
+            <field name="priority" eval="2"/>
+            <field name="arch" type="xml">
+                <calendar string="Meetings" date_start="start" date_stop="stop" color="location_room">
+                    <field name="name"/>
+                </calendar>
+            </field>
+        </record>
+
+        <record model="ir.actions.act_window" id="action_booked_calendar_event">
+            <field name="name">Booked calendar event</field>
+            <field name="res_model">booked.calendar.event</field>
+            <field name="view_mode">calendar,form</field>
+            <field name="view_id" ref="view_booked_calendar_event_calendar"/>
+        </record>
+
+
+        <menuitem id="booked_calendar_event"
+                  name="Booked Rooms"
+                  action="action_booked_calendar_event"
+                  parent="calendar.mail_menu_calendar"
+                  sequence="70"/>
+    </data>
+</odoo>

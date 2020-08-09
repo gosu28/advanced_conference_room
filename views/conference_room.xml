@@ -1,0 +1,42 @@
+<odoo>
+    <data>
+        <record model="ir.actions.act_window" id="action_conference_room">
+            <field name="name">Conference Room</field>
+            <field name="res_model">conference.room</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+        <record model="ir.ui.view" id="conference_room_tree_view">
+            <field name="name">Conference Room Tree View</field>
+            <field name="model">conference.room</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="">
+                    <field name="name"/>
+                    <field name="location"/>
+                </tree>
+            </field>
+        </record>
+        <record model="ir.ui.view" id="conference_room_form_view">
+            <field name="name">Conference Room Form View</field>
+            <field name="model">conference.room</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                        </group>
+                        <group>
+                            <field name="location"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <menuitem id="conference_menu_room"
+                  name="Create New Conference Rooms"
+                  action="action_conference_room"
+                  parent="calendar.menu_calendar_configuration"
+                  sequence="1"/>
+    </data>
+</odoo>
