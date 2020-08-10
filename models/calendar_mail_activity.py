@@ -1,23 +1,20 @@
 from datetime import date, timedelta, datetime
 import pytz
-from pytz import timezone
 from odoo import api, models, _
 from odoo.http import request
-
-from odoo.exceptions import UserError
 
 
 class CalendarMailActivity(models.Model):
     _name = 'calendar.event'
     _inherit = ['calendar.event', 'mail.thread', 'mail.activity.mixin']
 
-    # def get_timezone(self):
-    #     # get timezone
-    #     user_time_zone = pytz.UTC
-    #     if self.env.user.partner_id.tz:
-    #         # change the timezone to the timezone of the user
-    #         user_time_zone = pytz.timezone(self.env.user.partner_id.tz)
-    #     return user_time_zone.zone
+    def get_timezone(self):
+        # get timezone
+        user_time_zone = pytz.UTC
+        if self.env.user.partner_id.tz:
+            # change the timezone to the timezone of the user
+            user_time_zone = pytz.timezone(self.env.user.partner_id.tz)
+        return user_time_zone.zone
 
     @api.model
     def create(self, values):
@@ -38,88 +35,19 @@ class CalendarMailActivity(models.Model):
                     for rec in filter_calendar_ids:
                         calendar_id = rec.id
                         id_recurrent = rec.id.split('-')[0]
-                        convert_start_datetime = datetime.strptime(rec.start, '%Y-%m-%d %H:%M:%S')
-                        start = (convert_start_datetime + timedelta(minutes=5)).strftime('%Y-%m-%d %H:%M:%S.%f')
-                        convert_stop_datetime = datetime.strptime(rec.stop, '%Y-%m-%d %H:%M:%S')
-                        stop = (convert_stop_datetime - timedelta(minutes=5)).strftime('%Y-%m-%d %H:%M:%S.%f')
-                        location_rooms_list = []
-                        all_current_room_list = []
-                        all_current_partner_event = []
-                        start_time_ids = rec.env['calendar.event'].search([
-                            ('start', '>=', str(rec.start)), ('start', '<=', str(rec.stop))])
-                        stop_time_ids = rec.env['calendar.event'].search([
-                            ('stop', '>=', str(rec.start)), ('stop', '<=', str(rec.stop))])
-                        parent_time_ids = rec.env['calendar.event'].search([
-                            ('start', '>=', str(rec.start)), ('stop', '<=', str(rec.stop))])
-                        child_time_ids = rec.env['calendar.event'].search([
-                            ('start', '<=', str(rec.start)), ('stop', '>=', str(rec.stop))])
-                        if start_time_ids:
-                            for r in start_time_ids:
-                                all_current_partner_event.append(r)
-                            for r in start_time_ids.location_rooms.ids:
-                                all_current_room_list.append(r)
-                        if stop_time_ids:
-                            for r in stop_time_ids:
-                                all_current_partner_event.append(r)
-                            for r in stop_time_ids.location_rooms.ids:
-                                all_current_room_list.append(r)
-                        if parent_time_ids:
-                            for r in parent_time_ids:
-                                all_current_partner_event.append(r)
-                            for r in parent_time_ids.location_rooms.ids:
-                                all_current_room_list.append(r)
-                        if child_time_ids:
-                            for r in child_time_ids:
-                                all_current_partner_event.append(r)
-                            for r in child_time_ids.location_rooms.ids:
-                                all_current_room_list.append(r)
-                        for a in rec.location_rooms.ids:
-                            location_rooms_list.append(a)
-                        # Check room in recurrent calendar
-                        if len(all_current_room_list) > 0:
-                            for a in location_rooms_list:
-                                if a in all_current_room_list:
-                                    rec.is_create = False
-                                    # raise UserError(_(
-                                    #     "This Room Not Available This Time Because It Booked At Recurring Calendar"))
-                                    return {
-                                        'warning': {
-                                            'title': "Warning",
-                                            'message': "This Room Not Available This Time Because It Booked At "
-                                                       "Recurring Calendar",
-                                        }
-                                    }
-                        # Check partner in recurrent calendar
-                        elif all_current_partner_event and len(all_current_partner_event) > 0:
-                            for r in rec:
-                                for e in r.partner_ids.ids:
-                                    if e in all_current_partner_event[0].partner_ids.ids:
-                                        rec.is_create = False
-                                        busy_from = all_current_partner_event[0].start
-                                        convert_busy_from_datetime = datetime.strptime(busy_from,
-                                                                                       '%Y-%m-%d %H:%M:%S')
-                                        busy_from_datetime = convert_busy_from_datetime.astimezone(
-                                            timezone(rec.get_timezone())).strftime(
-                                            '%Y-%m-%d %H:%M:%S')
-                                        busy_to = all_current_partner_event[0].stop
-                                        convert_busy_to_datetime = datetime.strptime(busy_to,
-                                                                                     '%Y-%m-%d %H:%M:%S')
-                                        busy_to_datetime = convert_busy_to_datetime.astimezone(
-                                            timezone(rec.get_timezone())).strftime(
-                                            '%Y-%m-%d %H:%M:%S')
-                                        raise UserError(_(r.partner_ids.name + " is busy From " + str(
-                                            busy_from_datetime) + " To " + str(busy_to_datetime)))
-                        else:
-                            for a in rec.location_rooms:
-                                room_id = a.id
-                                rec.env['booked.calendar.event'].sudo().create({
-                                    'name': a.name,
-                                    'start': rec.start,
-                                    'stop': rec.stop,
-                                    'booked_calendar_event_id': id_recurrent,
-                                    'location_room': room_id,
-                                    'calendar_id': calendar_id
-                                })
+                        for a in rec.location_rooms:
+                            room_id = a.id
+                            convert_stop_date = rec.stop
+                            stop_date = datetime.strptime(convert_stop_date, '%Y-%m-%d %H:%M:%S') + timedelta(
+                                hours=(rec.duration - 1))
+                            rec.env['booked.calendar.event'].sudo().create({
+                                'name': a.name,
+                                'start': rec.start,
+                                'stop': stop_date,
+                                'booked_calendar_event_id': id_recurrent,
+                                'location_room': room_id,
+                                'calendar_id': calendar_id
+                            })
             partner_ids = []
             state = ['accepted', 'declined']
             attendee_ids = res.env['calendar.attendee'].sudo().search([('event_id', '=', res.id)])
@@ -165,12 +93,11 @@ class CalendarMailActivity(models.Model):
 
             return super(CalendarMailActivity, self).write(values)
 
-    def unlink(self):
-        for rec in self:
-            if type(rec._origin.id) is int:
-                rec.env['mail.activity'].sudo().search(
-                    [('res_id', '=', rec.id), ('res_model', '=', 'calendar.event')]).unlink()
-        return super(CalendarMailActivity, self).unlink()
+    # def unlink(self):
+    #     for rec in self:
+    #         rec.env['mail.activity'].sudo().search(
+    #             [('res_id', '=', rec.id), ('res_model', '=', 'calendar.event')]).unlink()
+    #     return super(CalendarMailActivity, self).unlink()
 
     def compute_join_attendee(self):
         event = self.env['calendar.attendee'].sudo().search([('event_id', '=', self.id)])

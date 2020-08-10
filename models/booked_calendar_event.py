@@ -1,4 +1,7 @@
+from datetime import datetime, timedelta
+
 from odoo import fields, models
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 class BookedCalendarEvent(models.Model):
@@ -9,3 +12,25 @@ class BookedCalendarEvent(models.Model):
     booked_calendar_event_id = fields.Many2one('calendar.event', ondelete='cascade')
     location_room = fields.Many2one('conference.room', 'Location Room', readonly=True)
     calendar_id = fields.Char(string='Calendar Event', store=True)
+
+    def create(self, vals):
+        res = super(BookedCalendarEvent, self).create(vals)
+        not_duplicate_ids = self.env['booked.calendar.event'].sudo().search(
+            ['|', '|', ('calendar_id', '=', False), ('location_room', '!=', res.location_room.id),
+             '|',
+             ('start', '>=', res.stop), ('stop', '<=', res.start)])
+        if not_duplicate_ids:
+            need_to_check = self.env['booked.calendar.event'].sudo().search(
+                [('calendar_id', '!=', False), ('location_room', '=', res.location_room.id),
+                 ('id', 'not in', not_duplicate_ids.ids), ('id', '!=', res.id)])
+            if need_to_check:
+                raise UserError("Can not create this calendar because of existing a event same time in future")
+        # not_duplicate_partner_ids = self.env['booked.calendar.event'].sudo().search(
+        #     ['|', '|', ('calendar_id', '=', False),
+        #      '|',
+        #      ('start', '>=', res.stop), ('stop', '<=', res.start)])
+        # if not_duplicate_partner_ids:
+        #     need_to_check = self.env['booked.calendar.event'].sudo().search(
+        #         [('calendar_id', '!=', False), ('location_room', '=', res.location_room.id),
+        #          ('id', 'not in', not_duplicate_ids.ids), ('id', '!=', res.id)])
+        return res

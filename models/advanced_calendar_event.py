@@ -18,7 +18,6 @@ class CalendarInherit(models.Model):
         string='Create by duplicate',
         required=False, )
     booked_calendar_id = fields.Char(string="Booked Calendar Event", store=True)
-    is_create = fields.Boolean(string='Is_create', default=True)
 
     @api.onchange('duration', 'name')
     def _check_duration(self):
@@ -34,27 +33,29 @@ class CalendarInherit(models.Model):
         if self.start_datetime and self.stop_datetime:
             if len(self.location_rooms) > 0:
                 for rec in self:
+                    start = rec.start.strftime('%Y-%m-%d %H:%M:%S.%f')
+                    stop = rec.stop.strftime('%Y-%m-%d %H:%M:%S.%f')
                     location_rooms_list = []
                     all_current_room_list = []
-                    start_time_ids = rec.env['calendar.event'].search([
-                        ('start', '>=', str(rec.start)), ('start', '<=', str(rec.stop))])
-                    stop_time_ids = rec.env['calendar.event'].search([
-                        ('stop', '>=', str(rec.start)), ('stop', '<=', str(rec.stop))])
-                    parent_time_ids = rec.env['calendar.event'].search([
-                        ('start', '>=', str(rec.start)), ('stop', '<=', str(rec.stop))])
-                    child_time_ids = rec.env['calendar.event'].search([
-                        ('start', '<=', str(rec.start)), ('stop', '>=', str(rec.stop))])
+                    start_time_ids = rec.env['booked.calendar.event'].search([
+                         ('start', '>=', start), ('start', '<=', stop)])
+                    stop_time_ids = rec.env['booked.calendar.event'].search([
+                        ('stop', '>=', start), ('stop', '<=', stop)])
+                    parent_time_ids = rec.env['booked.calendar.event'].search([
+                        ('start', '>=', start), ('stop', '<=', stop)])
+                    child_time_ids = rec.env['booked.calendar.event'].search([
+                        ('start', '<=', start), ('stop', '>=', stop)])
                     if start_time_ids:
-                        for r in start_time_ids.location_rooms.ids:
+                        for r in start_time_ids.location_room.ids:
                             all_current_room_list.append(r)
                     if stop_time_ids:
-                        for r in stop_time_ids.location_rooms.ids:
+                        for r in stop_time_ids.location_room.ids:
                             all_current_room_list.append(r)
                     if parent_time_ids:
-                        for r in parent_time_ids.location_rooms.ids:
+                        for r in parent_time_ids.location_room.ids:
                             all_current_room_list.append(r)
                     if child_time_ids:
-                        for r in child_time_ids.location_rooms.ids:
+                        for r in child_time_ids.location_room.ids:
                             all_current_room_list.append(r)
                     for a in rec.location_rooms.ids:
                         location_rooms_list.append(a)
@@ -148,8 +149,8 @@ class CalendarInherit(models.Model):
                         for r in child_time_ids:
                             all_current_partner_event.append(r)
                     if all_current_partner_event and len(all_current_partner_event) > 0:
-                        for r in self:
-                            for e in r.partner_ids.ids:
+                        for r in self.partner_ids:
+                            for e in r.ids:
                                 if e in all_current_partner_event[0].partner_ids.ids:
                                     busy_from = all_current_partner_event[0].start
                                     convert_busy_from_datetime = datetime.strptime(busy_from, '%Y-%m-%d %H:%M:%S')
@@ -162,7 +163,7 @@ class CalendarInherit(models.Model):
                                         timezone(self.get_timezone())).strftime(
                                         '%Y-%m-%d %H:%M:%S')
                                     raise UserError(_(
-                                        r.partner_ids.name + " is busy From " + str(busy_from_datetime) + " To " + str(
+                                        r.name + " is busy From " + str(busy_from_datetime) + " To " + str(
                                             busy_to_datetime) + " From Recurrent Calendar."))
 
     @api.onchange('partner_ids', 'start_datetime', 'duration', 'location_rooms')
@@ -204,10 +205,12 @@ class CalendarInherit(models.Model):
         for rec in self:
             if rec._uid != rec.create_uid.id and not self.env.user.has_group('base.group_system'):
                 raise ValidationError(_('Can Not Delete This Record.Please Contact With Your Admin'))
-        super(CalendarInherit, self).unlink()
+        res = super(CalendarInherit, self).unlink()
         for rec in self:
-            if type(rec._origin.id) is int:
-                self.env['booked.calendar.event'].sudo().search([('calendar_id', '=', rec.id)]).unlink()
+            if type(rec.id) is int:
+                rec.rec.env['calendar.event'].sudo().search([('calendar_id', '=', rec.id)]).unlink()
+            rec.env['booked.calendar.event'].sudo().search([('calendar_id', '=', rec.id)]).unlink()
+        return res
 
     @api.model
     def create(self, vals):
