@@ -1,6 +1,7 @@
-from datetime import date, timedelta, datetime
-import pytz
-from odoo import api, models, _
+import datetime
+from datetime import date,timedelta
+
+from odoo import api, models
 from odoo.http import request
 
 
@@ -8,46 +9,10 @@ class CalendarMailActivity(models.Model):
     _name = 'calendar.event'
     _inherit = ['calendar.event', 'mail.thread', 'mail.activity.mixin']
 
-    def get_timezone(self):
-        # get timezone
-        user_time_zone = pytz.UTC
-        if self.env.user.partner_id.tz:
-            # change the timezone to the timezone of the user
-            user_time_zone = pytz.timezone(self.env.user.partner_id.tz)
-        return user_time_zone.zone
-
     @api.model
     def create(self, values):
         if values.get('create_by_duplicate') == False:
             res = super(CalendarMailActivity, self).create(values)
-            if values.get('recurrency') == True:
-                calendar_id = self.env['calendar.event'].search([('recurrency', '=', True)])
-                all_fake_booked_id = []
-                for r in calendar_id.ids:
-                    booked_calendar_id = r.split('-')[0]
-                    all_fake_booked_id.append(booked_calendar_id)
-                max_value = max(all_fake_booked_id)
-                filter_value = [value for index, value in enumerate(all_fake_booked_id) if value == max_value]
-                filter_calendar_ids = self.env['calendar.event'].search([('recurrency', '=', True)],
-                                                                        limit=len(filter_value))
-                # Create fake records into the database
-                if filter_calendar_ids:
-                    for rec in filter_calendar_ids:
-                        calendar_id = rec.id
-                        id_recurrent = rec.id.split('-')[0]
-                        for a in rec.location_rooms:
-                            room_id = a.id
-                            convert_stop_date = rec.stop
-                            stop_date = datetime.strptime(convert_stop_date, '%Y-%m-%d %H:%M:%S') + timedelta(
-                                hours=(rec.duration - 1))
-                            rec.env['booked.calendar.event'].sudo().create({
-                                'name': a.name,
-                                'start': rec.start,
-                                'stop': stop_date,
-                                'booked_calendar_event_id': id_recurrent,
-                                'location_room': room_id,
-                                'calendar_id': calendar_id
-                            })
             partner_ids = []
             state = ['accepted', 'declined']
             attendee_ids = res.env['calendar.attendee'].sudo().search([('event_id', '=', res.id)])
@@ -62,6 +27,7 @@ class CalendarMailActivity(models.Model):
         else:
             res = super(CalendarMailActivity, self).create(values)
             return res
+
 
     def write(self, values):
         # self.ensure_one()
@@ -90,14 +56,44 @@ class CalendarMailActivity(models.Model):
                     else:
                         rec.activity_schedule('advanced_conference_room.mail_act_meeting', date_deadline=date.today(),
                                               user_id=user_id.id, automated=True, calendar_event_id=rec.id)
+        return super(CalendarMailActivity, self).write(values)
 
-            return super(CalendarMailActivity, self).write(values)
+    def unlink(self):
+        for rec in self:
+            rec.env['mail.activity'].sudo().search(
+                [('res_id', '=', rec.id), ('res_model', '=', 'calendar.event')]).unlink()
+            odoobot = self.env['res.partner'].sudo().search([('id', '=', 3), ('active', '=', False)])
+            ch_obj = self.env['mail.channel']
+            for partner in rec.partner_ids:
+                ch = ch_obj.sudo().search([('channel_partner_ids', 'in', partner.id),
+                                           ('channel_partner_ids', 'in', odoobot.id)])
+                for c in ch:
+                    if len(c.channel_last_seen_partner_ids) == 2:
+                        ch = c
+                        break
+                # users = []
+                # users.append(opp.user_id.id)
+                # users.append(self.env.user.id)
+                if not ch:
+                    ch = ch_obj.sudo().create({
+                        'name': 'Home Bot',
+                        'public': 'private',
+                        'channel_last_seen_partner_ids': [
+                            (0, None, {
+                                'partner_id': odoobot.id,
+                            }),
+                            (0, None, {
+                                'partner_id': partner.id,
+                            }),
+                        ]
+                    })
+                ch.sudo().message_post(attachment_ids=[],
+                                       body="Meeting "+rec.name+" has been cancelled",
+                                       content_subtype='html',
+                                       message_type='comment', partner_ids=[], subtype='mail.mt_comment',
+                                       email_from=odoobot.email, author_id=odoobot.id)
 
-    # def unlink(self):
-    #     for rec in self:
-    #         rec.env['mail.activity'].sudo().search(
-    #             [('res_id', '=', rec.id), ('res_model', '=', 'calendar.event')]).unlink()
-    #     return super(CalendarMailActivity, self).unlink()
+        return super(CalendarMailActivity, self).unlink()
 
     def compute_join_attendee(self):
         event = self.env['calendar.attendee'].sudo().search([('event_id', '=', self.id)])

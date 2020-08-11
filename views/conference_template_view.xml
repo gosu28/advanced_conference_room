@@ -4,9 +4,13 @@
             <field name="name">Description Template</field>
             <field name="res_model">conference.template</field>
             <field name="view_mode">tree,form</field>
-            <field name="target">inline</field>
+            <field name="target">current</field>
         </record>
 
+<!--        <template id="assets_backend" name="calendar assets" inherit_id="web.assets_backend">-->
+<!--            <xpath expr="//script[@src='/calendar/static/src/js/mail_activity.js']" position="replace">-->
+<!--            </xpath>-->
+<!--        </template>-->
         <record id="conference_template_form" model="ir.ui.view">
             <field name="name">Description Template</field>
             <field name="model">conference.template</field>
@@ -39,6 +43,13 @@
                     <field name="name"/>
                 </tree>
             </field>
+        </record>
+
+
+        <record model="ir.actions.act_window" id="action_conference_template">
+            <field name="name">Description Template</field>
+            <field name="res_model">conference.template</field>
+            <field name="view_mode">tree,form</field>
         </record>
 
         <menuitem id="conference_template"

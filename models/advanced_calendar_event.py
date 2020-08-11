@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 import pytz
 from pytz import timezone
@@ -17,7 +17,6 @@ class CalendarInherit(models.Model):
     create_by_duplicate = fields.Boolean(
         string='Create by duplicate',
         required=False, )
-    booked_calendar_id = fields.Char(string="Booked Calendar Event", store=True)
 
     @api.onchange('duration', 'name')
     def _check_duration(self):
@@ -26,47 +25,9 @@ class CalendarInherit(models.Model):
                 rec.duration = 0.5
 
     @api.onchange('location_rooms', 'start_datetime', 'stop_datetime')
-    def _onchange_recurrent_location_rooms(self):
-        """
-            Check time when creating record with recurrent calendar
-        """
-        if self.start_datetime and self.stop_datetime:
-            if len(self.location_rooms) > 0:
-                for rec in self:
-                    start = rec.start.strftime('%Y-%m-%d %H:%M:%S.%f')
-                    stop = rec.stop.strftime('%Y-%m-%d %H:%M:%S.%f')
-                    location_rooms_list = []
-                    all_current_room_list = []
-                    start_time_ids = rec.env['booked.calendar.event'].search([
-                         ('start', '>=', start), ('start', '<=', stop)])
-                    stop_time_ids = rec.env['booked.calendar.event'].search([
-                        ('stop', '>=', start), ('stop', '<=', stop)])
-                    parent_time_ids = rec.env['booked.calendar.event'].search([
-                        ('start', '>=', start), ('stop', '<=', stop)])
-                    child_time_ids = rec.env['booked.calendar.event'].search([
-                        ('start', '<=', start), ('stop', '>=', stop)])
-                    if start_time_ids:
-                        for r in start_time_ids.location_room.ids:
-                            all_current_room_list.append(r)
-                    if stop_time_ids:
-                        for r in stop_time_ids.location_room.ids:
-                            all_current_room_list.append(r)
-                    if parent_time_ids:
-                        for r in parent_time_ids.location_room.ids:
-                            all_current_room_list.append(r)
-                    if child_time_ids:
-                        for r in child_time_ids.location_room.ids:
-                            all_current_room_list.append(r)
-                    for a in rec.location_rooms.ids:
-                        location_rooms_list.append(a)
-                    for a in location_rooms_list:
-                        if a in all_current_room_list:
-                            raise UserError(_("This Room Not Available This Time"))
-
-    @api.onchange('location_rooms', 'start_datetime', 'stop_datetime')
     def _onchange_location_rooms(self):
         if str(self.start_datetime) and str(self.start_datetime) < str(fields.Datetime.now()):
-            self.start_datetime = fields.Datetime.now() + timedelta(minutes=5)
+            self.start_datetime = fields.Datetime.now()
             return {
                 'warning': {
                     'title': "Warning",
@@ -76,7 +37,7 @@ class CalendarInherit(models.Model):
         if self.location_rooms and self.start_datetime and self.stop_datetime:
             start = (self.start_datetime + timedelta(minutes=5)).strftime('%Y-%m-%d %H:%M:%S')
             end = (self.stop_datetime - timedelta(minutes=5)).strftime('%Y-%m-%d %H:%M:%S')
-            if self._origin.id and self._origin.id and type(self._origin.id) is int:
+            if self._origin.id:
                 self.env.cr.execute('''SELECT conference_room_id FROM calendar_event_conference_room_rel WHERE calendar_event_id IN (
                                        SELECT id FROM calendar_event
                                        WHERE ((%s BETWEEN start AND stop) OR (%s BETWEEN start AND stop) OR ((start BETWEEN %s AND %s) AND (stop BETWEEN %s AND %s) )) and active=TRUE  AND (id not in %s))''',
@@ -116,67 +77,14 @@ class CalendarInherit(models.Model):
         return user_time_zone.zone
 
     @api.onchange('partner_ids', 'start_datetime', 'duration', 'location_rooms')
-    def _onchange_recurrent_partner_id(self):
-        """
-            Check partner when created recurrent calendar
-        """
-        if self.partner_ids and self.start and self.stop:
-            start = (self.start + timedelta(minutes=5)).strftime(
-                '%Y-%m-%d %H:%M:%S.%f')
-            stop = (self.stop - timedelta(minutes=5)).strftime(
-                '%Y-%m-%d %H:%M:%S.%f')
-            if len(self.partner_ids) > 0:
-                for rec in self:
-                    all_current_partner_event = []
-                    start_time_ids = rec.env['calendar.event'].search([
-                        ('start', '>=', start), ('start', '<=', stop)])
-                    stop_time_ids = rec.env['calendar.event'].search([
-                        ('stop', '>=', start), ('stop', '<=', stop)])
-                    parent_time_ids = rec.env['calendar.event'].search([
-                        ('start', '>=', start), ('stop', '<=', stop)])
-                    child_time_ids = rec.env['calendar.event'].search([
-                        ('start', '<=', start), ('stop', '>=', stop)])
-                    if start_time_ids:
-                        for r in start_time_ids:
-                            all_current_partner_event.append(r)
-                    if stop_time_ids:
-                        for r in stop_time_ids:
-                            all_current_partner_event.append(r)
-                    if parent_time_ids:
-                        for r in parent_time_ids:
-                            all_current_partner_event.append(r)
-                    if child_time_ids:
-                        for r in child_time_ids:
-                            all_current_partner_event.append(r)
-                    if all_current_partner_event and len(all_current_partner_event) > 0:
-                        for r in self.partner_ids:
-                            for e in r.ids:
-                                if e in all_current_partner_event[0].partner_ids.ids:
-                                    busy_from = all_current_partner_event[0].start
-                                    convert_busy_from_datetime = datetime.strptime(busy_from, '%Y-%m-%d %H:%M:%S')
-                                    busy_from_datetime = convert_busy_from_datetime.astimezone(
-                                        timezone(self.get_timezone())).strftime(
-                                        '%Y-%m-%d %H:%M:%S')
-                                    busy_to = all_current_partner_event[0].stop
-                                    convert_busy_to_datetime = datetime.strptime(busy_to, '%Y-%m-%d %H:%M:%S')
-                                    busy_to_datetime = convert_busy_to_datetime.astimezone(
-                                        timezone(self.get_timezone())).strftime(
-                                        '%Y-%m-%d %H:%M:%S')
-                                    raise UserError(_(
-                                        r.name + " is busy From " + str(busy_from_datetime) + " To " + str(
-                                            busy_to_datetime) + " From Recurrent Calendar."))
-
-    @api.onchange('partner_ids', 'start_datetime', 'duration', 'location_rooms')
     def _onchange_partner_id(self):
         if self.partner_ids and self.start and self.stop:
-            start = (self.start + timedelta(minutes=5)).strftime(
-                '%Y-%m-%d %H:%M:%S')
-            stop = (self.stop - timedelta(minutes=5)).strftime(
-                '%Y-%m-%d %H:%M:%S')
+            start = (self.start + timedelta(minutes=5)).strftime('%Y-%m-%d %H:%M:%S')
+            stop = (self.stop - timedelta(minutes=5)).strftime('%Y-%m-%d %H:%M:%S')
             if len(self.partner_ids) > 0:
                 for e in self.partner_ids:
                     current_partner = e.ids[0]
-                    if self._origin and self._origin.id and type(self._origin.id) is int:
+                    if self._origin and self._origin.id:
                         self.env.cr.execute('''
                                                             SELECT partner_id, event_id FROM calendar_attendee WHERE event_id IN (
                                                             SELECT id FROM calendar_event WHERE ((%s BETWEEN start AND stop) 
@@ -205,12 +113,9 @@ class CalendarInherit(models.Model):
         for rec in self:
             if rec._uid != rec.create_uid.id and not self.env.user.has_group('base.group_system'):
                 raise ValidationError(_('Can Not Delete This Record.Please Contact With Your Admin'))
-        res = super(CalendarInherit, self).unlink()
+        super(CalendarInherit, self).unlink()
         for rec in self:
-            if type(rec.id) is int:
-                rec.rec.env['calendar.event'].sudo().search([('calendar_id', '=', rec.id)]).unlink()
-            rec.env['booked.calendar.event'].sudo().search([('calendar_id', '=', rec.id)]).unlink()
-        return res
+            self.env['booked.calendar.event'].sudo().search([('booked_calendar_event_id', '=', rec.id)]).unlink()
 
     @api.model
     def create(self, vals):
@@ -218,19 +123,20 @@ class CalendarInherit(models.Model):
             force_create = False
             if 'force_create_by_leave' in self._context:
                 force_create = self._context['force_create_by_leave']
-            if str(vals.get('start_datetime')) and str(vals.get('start_datetime')) < str(
-                    fields.Datetime.now() - timedelta(minutes=5)) and not force_create:
+            if str(vals.get('start_datetime')) and str(vals.get('start_datetime')) < str(fields.Datetime.now()) and not force_create:
                 raise UserError(_("You Can Not Create A Meeting In The Past"))
             if vals.get('location_rooms'):
                 if not vals.get('tasks'):
                     raise ValidationError(_('Can Not Create Meeting without Tasks (Host, Plan, ...) at the bottom'))
             return super(CalendarInherit, self).create(vals)
         else:
+            self = self.with_context(
+                create_by_duplicate=vals['create_by_duplicate'],
+            )
             return super(CalendarInherit, self).create(vals)
 
     def write(self, vals):
-        if str(vals.get('start_datetime')) and str(vals.get('start_datetime')) < str(
-                fields.Datetime.now() - timedelta(minutes=5)):
+        if str(vals.get('start_datetime')) and str(vals.get('start_datetime')) < str(fields.Datetime.now()):
             raise UserError(_("You Can Not Create A Meeting In The Past"))
         old_rooms = self.location_rooms
         for rec in self:
@@ -240,18 +146,16 @@ class CalendarInherit(models.Model):
         if 'location_rooms' in vals or 'start_datetime' in vals or 'duration' in vals:
             if len(old_rooms) > 0:
                 for rec in self:
-                    self.env['booked.calendar.event'].sudo().search(
-                        [('booked_calendar_event_id', '=', rec.id)]).unlink()
+                    self.env['booked.calendar.event'].sudo().search([('booked_calendar_event_id', '=', rec.id)]).unlink()
             for rec in self:
                 for a in rec.location_rooms:
-                    if rec.recurrency == False:
-                        self.env['booked.calendar.event'].sudo().create({
-                            'booked_calendar_event_id': rec.id,
-                            'name': a.name,
-                            'start': rec.start,
-                            'stop': rec.stop,
-                            'location_room': a.id
-                        })
+                    self.env['booked.calendar.event'].sudo().create({
+                        'booked_calendar_event_id': rec.id,
+                        'name': a.name,
+                        'start': rec.start,
+                        'stop': rec.stop,
+                        'location_room': a.id
+                    })
         if vals.get('location_rooms'):
             for rec in self:
                 if rec.create_by_duplicate == True:
@@ -275,11 +179,70 @@ class CalendarInherit(models.Model):
                     raise ValidationError(_('Can Not Create Meeting without Tasks (Host, Plan, ...) at the bottom'))
         return result
 
+    @api.returns('self', lambda value: value.id)
+    def copy(self, default=None):
+        copy = super(CalendarInherit, self).copy(default={'create_by_duplicate': True})
+        return copy
+    def create_attendees(self):
+        current_user = self.env.user
+        result = {}
+        for meeting in self:
+            alreay_meeting_partners = meeting.attendee_ids.mapped('partner_id')
+            meeting_attendees = self.env['calendar.attendee']
+            meeting_partners = self.env['res.partner']
+            for partner in meeting.partner_ids.filtered(lambda partner: partner not in alreay_meeting_partners):
+                values = {
+                    'partner_id': partner.id,
+                    'email': partner.email,
+                    'event_id': meeting.id,
+                }
+
+                if self._context.get('google_internal_event_id', False):
+                    values['google_internal_event_id'] = self._context.get('google_internal_event_id')
+
+                # current user don't have to accept his own meeting
+                if partner == self.env.user.partner_id:
+                    values['state'] = 'accepted'
+
+                attendee = self.env['calendar.attendee'].create(values)
+
+                meeting_attendees |= attendee
+                meeting_partners |= partner
+
+            if meeting_attendees and not self._context.get('detaching') and not self._context.get('create_by_duplicate'):
+                to_notify = meeting_attendees.filtered(lambda a: a.email != current_user.email)
+                to_notify._send_mail_to_attendees('calendar.calendar_template_meeting_invitation')
+
+            if meeting_attendees:
+                meeting.write({'attendee_ids': [(4, meeting_attendee.id) for meeting_attendee in meeting_attendees]})
+
+            if meeting_partners:
+                meeting.message_subscribe(partner_ids=meeting_partners.ids)
+
+            # We remove old attendees who are not in partner_ids now.
+            all_partners = meeting.partner_ids
+            all_partner_attendees = meeting.attendee_ids.mapped('partner_id')
+            old_attendees = meeting.attendee_ids
+            partners_to_remove = all_partner_attendees + meeting_partners - all_partners
+
+            attendees_to_remove = self.env["calendar.attendee"]
+            if partners_to_remove:
+                attendees_to_remove = self.env["calendar.attendee"].search([('partner_id', 'in', partners_to_remove.ids), ('event_id', '=', meeting.id)])
+                attendees_to_remove.unlink()
+
+            result[meeting.id] = {
+                'new_attendees': meeting_attendees,
+                'old_attendees': old_attendees,
+                'removed_attendees': attendees_to_remove,
+                'removed_partners': partners_to_remove
+            }
+        return result
 
 class CalendarEventPartner(models.Model):
     _inherit = 'calendar.event'
 
     def write(self, vals):
+        # self.ensure_one()
         if vals.get('partner_ids'):
             for rec in self:
                 # find old partner_ids
