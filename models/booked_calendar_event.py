@@ -27,13 +27,22 @@ class BookedCalendarEvent(models.Model):
             if need_to_check:
                 raise UserError("Can not create this calendar because of existing a event same time in future")
         partner_list = []
-        not_duplicate_partner_ids = self.env['booked.calendar.event'].sudo().search(
+        not_duplicate_record_ids = self.env['booked.calendar.event'].sudo().search(
             ['|', ('calendar_id', '=', False),
              '|',
              ('start', '>=', res.stop), ('stop', '<=', res.start)])
-        if not_duplicate_partner_ids:
-            need_to_check_booked_event = self.env['booked.calendar.event'].sudo().read_group(
-                [('id', 'not in', not_duplicate_partner_ids.ids)], ['booked_calendar_event_id'], ['id'])
+        if not_duplicate_record_ids:
+            need_to_check_booked_event = self.env['booked.calendar.event'].sudo().search(
+                [('id', 'not in', not_duplicate_record_ids.ids)])
             if need_to_check_booked_event:
-
+                # need_to_check_booked_event.booked_calendar_event_id.partner_ids.ids
+                for rec in need_to_check_booked_event:
+                    need_to_check_partner = self.env['calendar.event'].sudo().search(
+                        [('id', 'in', rec.booked_calendar_event_id.ids)])
+                    if need_to_check_partner:
+                        for r in need_to_check_partner:
+                            if r.partner_id:
+                                for e in r.partner_id:
+                                    if e.id in need_to_check_booked_event.booked_calendar_event_id.partner_ids.ids:
+                                        raise UserError(e.name + 'ís busy in recurring calendar')
         return res
