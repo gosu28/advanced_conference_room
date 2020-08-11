@@ -32,8 +32,8 @@ class BookedCalendarEvent(models.Model):
              '|',
              ('start', '>=', res.stop), ('stop', '<=', res.start)])
         if not_duplicate_partner_ids:
-            need_to_check_partner = self.env['booked.calendar.event'].sudo().read_group(
-                [('id', 'not in', not_duplicate_partner_ids.ids)], ['id'], ['id'])
-            if need_to_check_partner:
-                print('--')
+            need_to_check_booked_event = self.env['booked.calendar.event'].sudo().read_group(
+                [('id', 'not in', not_duplicate_partner_ids.ids)], ['booked_calendar_event_id'], ['id'])
+            if need_to_check_booked_event:
+
         return res
