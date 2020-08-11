@@ -35,5 +35,6 @@ class BookedCalendarEvent(models.Model):
             need_to_check_booked_event = self.env['booked.calendar.event'].sudo().read_group(
                 [('id', 'not in', not_duplicate_partner_ids.ids)], ['booked_calendar_event_id'], ['id'])
             if need_to_check_booked_event:
+                pass
 
         return res
